@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { Button } from "@mui/material";
+import "./css/components.css"
 
-const FileUploader = () => {
+const FileUploader = ({setTime, setFName}) => {
   const [file, setFile] = useState(null);
+
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
   const handleFileUpload = async () => {
+    const currentTimestamp = Date.now();
+    setTime(currentTimestamp);
+    if (file) {
+      setFName(file.name); // Set the file name
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -22,9 +31,9 @@ const FileUploader = () => {
 
   return (
     <div>
-      <div>
+      <div style={{margin:"20px"}}>
         <input type="file" onChange={handleFileChange} />
-        <button onClick={handleFileUpload}>Upload Video</button>
+        <Button variant="contained" size="large" onClick={handleFileUpload}>Upload Video</Button>
       </div>
     </div>
   );
