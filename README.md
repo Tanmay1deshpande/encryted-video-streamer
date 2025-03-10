@@ -2,7 +2,7 @@
 
 An application used to upload an encrypted video file, playable only while using apache kafka
 
-Data Flow
+Ideal Data Flow
 User Uploads Video:
 
 The user selects a video file from the UI.
@@ -19,3 +19,17 @@ The frontend will subscribe to the Kafka topic and receive video chunks for play
 Frontend (React):
 
 The frontend listens to Kafka topics and streams the video chunks for display using a video player.
+
+Current Flow:
+User uploads a video from React frontend to Flask Backend.
+Flask Saves the video to SQL after AES256 encryption.
+
+When user clicks on Play in the frontend, it sends an API call to flask which queries the required data for the video.
+Flask sends the base64 encoded data to the frontend
+In react, I am decoding th base64 data by converting it to a blob and then making a URL from it.
+After passing the URL in the video element, the user can see the video.
+
+Kafka implementation did not work as my device was not compatible with some features of kafka.
+However I have written kafka code to completion, could not complete unit testing as kafka servers were not initializing in my project.
+
+Thank you.

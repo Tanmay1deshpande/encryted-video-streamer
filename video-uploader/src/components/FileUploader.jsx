@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Button } from "@mui/material";
+import { Button, LinearProgress } from "@mui/material";
 import "./css/components.css";
 
-const FileUploader = ({ setTime, setFName }) => {
+const FileUploader = ({ setTime, setFName, triggerReload }) => {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
+  const [loader, setLoader] = useState(false);
   const chunkSize = 16 * 1024;
 
   const encryptFile = async (file) => {
@@ -41,11 +42,7 @@ const FileUploader = ({ setTime, setFName }) => {
 
   const encryptChunk = async (chunk, key, iv) => {
     // Encrypt a chunk of the file using AES-GCM
-    const encryptedChunk = await window.crypto.subtle.encrypt(
-      { name: "AES-GCM", iv },
-      key,
-      chunk
-    );
+    const encryptedChunk = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, chunk);
     return encryptedChunk;
   };
 
@@ -72,7 +69,7 @@ const FileUploader = ({ setTime, setFName }) => {
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     if (e.target.files[0]) {
-      encryptFile(e.target.files[0]);
+      // encryptFile(e.target.files[0]);//Send chunks of the video
     }
   };
 
@@ -84,34 +81,36 @@ const FileUploader = ({ setTime, setFName }) => {
     }
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("video", file);
+    formData.append("video_name", file.name);
 
-    // Send to backend Flask API
+    // Send video to backend Flask API
     try {
-      const response = await axios.post(
-        "http://127.0.0.1:5000/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      setLoader(true);
+      const response = await axios.post("http://127.0.0.1:5000/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       console.log("Response: ", response);
-      if (response.data.status === "success") {
+      if (response.data.message === "Upload successful") {
         console.log("Uploaded successfully");
         alert("Video uploaded successfully");
+        setLoader(false);
+        triggerReload(true);
       }
     } catch (error) {
       console.error("Error uploading video:", error);
       alert("Upload failed");
+      setLoader(false);
     }
   };
 
   return (
     <div>
       <div style={{ margin: "20px" }}>
+        {loader && <LinearProgress />}
         <input type="file" onChange={handleFileChange} />
         <Button variant="contained" size="large" onClick={handleFileUpload}>
           Upload Video
