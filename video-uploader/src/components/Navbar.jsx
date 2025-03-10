@@ -7,6 +7,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Navbar = ({ title, navigationBtn }) => {
   const navigate = useNavigate();
@@ -17,6 +18,16 @@ const Navbar = ({ title, navigationBtn }) => {
       navigate("/home");
       console.log("BTNNN");
     }
+  };
+
+  const testingDb = async () => {
+    const response = await axios.get("http://127.0.0.1:5000/test");
+    console.log("Response for test: ", response);
+  };
+
+  const testingCreateDb = async () => {
+    const response = await axios.get("http://127.0.0.1:5000/createDb");
+    console.log("Response for CreateDB: ", response);
   };
 
   return (
@@ -30,6 +41,12 @@ const Navbar = ({ title, navigationBtn }) => {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               {title}
             </Typography>
+            <Button color="inherit" variant="outlined" onClick={testingDb}>
+              Testing
+            </Button>
+            <Button color="inherit" variant="outlined" onClick={testingCreateDb}>
+              CreateDB
+            </Button>
 
             {navigationBtn == "Uploader" && (
               <Button color="inherit" variant="outlined" onClick={goWhere}>

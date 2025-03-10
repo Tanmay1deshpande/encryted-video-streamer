@@ -2,6 +2,8 @@
 
 An application used to upload an encrypted video file, playable only while using apache kafka
 
+React Application Link: https://encryted-video-streamer-1.onrender.com
+
 Ideal Data Flow
 User Uploads Video:
 

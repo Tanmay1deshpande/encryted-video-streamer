@@ -39,6 +39,9 @@ const VideoList = ({ time, fName, triggerReload }) => {
         setVideos(response.data);
         setNoVidYet(false);
         setLoader(false);
+      } else {
+        console.log("No videos available");
+        setLoader(false);
       }
     } catch (error) {
       console.log("No videos found yet.", error?.response.data);

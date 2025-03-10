@@ -11,6 +11,7 @@ from encryption.aes_cipher import AESCipher
 import database
 import base64
 from datetime import datetime
+import psycopg2
 
 
 # App setup
@@ -22,7 +23,27 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # MySQL Connection
-conn = pymysql.connect(host="localhost", user="root", password="Dtanmay17@", database="video_db")
+# conn = pymysql.connect(host="localhost", user="root", password="Dtanmay17@", database="video_db")
+# cursor = conn.cursor()
+
+#MySQL Aiven Hosted DB server connection: 
+# timeout = 10
+# conn = pymysql.connect(
+#   charset="utf8mb4",
+#   connect_timeout=timeout,
+#   cursorclass=pymysql.cursors.DictCursor,
+#   db="defaultdb_1ycj",
+#   host="mysql-dtanmay17-personal-projects-dtanmay17.d.aivencloud.com",
+#   password="cWppaEkh9rUbpBT508BW9Til7dGlkcZS",
+#   read_timeout=timeout,
+#   port=5432,
+#   user="adminy",
+#   write_timeout=timeout,
+# ) 
+
+# Render PostgresSQL database connection 
+DATABASE_URL = "postgresql://adminy:cWppaEkh9rUbpBT508BW9Til7dGlkcZS@dpg-cv7ia2qn91rc73e4h8rg-a.singapore-postgres.render.com/defaultdb_1ycj"
+conn = psycopg2.connect(DATABASE_URL)
 cursor = conn.cursor()
 
 KEY = get_random_bytes(32)  # AES-256 requires a 32-byte key
@@ -41,8 +62,8 @@ def upload_video():
         video_name = request.form['video_name']  
         video_data = video.read()  
 
-        query = "INSERT INTO videos (video_name, video_data) VALUES (%s, %s)"
-        cursor.execute(query, (video_name, video_data))
+        query = "INSERT INTO videos (video_name, video_data) VALUES ($1, $2)"
+        cursor.execute(query, (video_name, psycopg2.Binary(video_data)))
         conn.commit()
 
         return jsonify({"message": "Upload successful"}), 201
@@ -56,7 +77,7 @@ def upload_video():
 def get_video(video_id):
     print("Video ID: ", video_id)
     try:
-        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = %s", (video_id))
+        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = $1", (video_id))
         result = cursor.fetchone()
         # print("Result: ", result)
         oneVideo = {
@@ -75,13 +96,13 @@ def get_video(video_id):
 @cross_origin(origin='*')
 def get_videos():
     try:
-        cursor.execute("SELECT id, video_name, video_data, upload_time FROM videos")
+        cursor.execute("SELECT id, video_name, upload_time FROM videos")
         rows = cursor.fetchall()
         videos = []
 
         for row in rows:
 
-            id, video_name, video_data, upload_time = row  # Unpack row values
+            id, video_name, upload_time = row  # Unpack row values
 
             if upload_time is None:
                 formatted_time = None
@@ -90,15 +111,15 @@ def get_videos():
                 upload_time = upload_time.decode("utf-8")  # Convert bytes to string
                 upload_time = datetime.strptime(upload_time, "%Y-%m-%d %H:%M:%S")  # Convert to datetime
                 formatted_time = upload_time.strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(upload_time, str):
+                print("Upload time from DB: ",upload_time)
+                formatted_time = upload_time
             else:
                 formatted_time = upload_time.strftime("%Y-%m-%d %H:%M:%S")
-
-            video_data_base64 = base64.b64encode(video_data).decode("utf-8")
 
             videos.append({
                 "id": id,
                 "video_name": video_name,
-                # "video_data": video_data_base64,
                 "upload_time": formatted_time
             })
 
@@ -106,6 +127,45 @@ def get_videos():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+
+@app.route("/test", methods=["GET"])
+@cross_origin(origin='*')
+def test():
+    try:
+        cursor.execute("SELECT id, video_name, video_data, upload_time FROM videos")
+        rows = cursor.fetchall()
+
+        result = [
+            {
+                "id": row[0],
+                "video_name": row[1],
+                # "video_data": base64.b64encode(row[2]).decode("utf-8") if row[2] else None,  # Fix variable name
+                "upload_time": row[2].strftime("%Y-%m-%d %H:%M:%S") if row[3] else None  # Handle None case
+            }
+            for row in rows
+        ]
+        print("RESULT: ",rows,"BOIII")
+
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 600
+    
+
+@app.route("/createDb", methods=["GET"])
+@cross_origin(origins='*')
+def create_db():
+    try:
+        cursor.execute("CREATE TABLE videos (id SERIAL PRIMARY KEY, video_name VARCHAR(255) NOT NULL, video_data BYTEA NOT NULL, upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP )")
+        cursor.execute("CREATE TABLE mytest (id INTEGER PRIMARY KEY)")
+        cursor.execute("INSERT INTO mytest (id) VALUES (1), (2)")
+        cursor.execute("SELECT * FROM mytest")
+        print(cursor.fetchall())
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 600
 
 ##############################################Previous Code Version###############################################
 # @app.route("/uploadFinal", methods=["POST"])
