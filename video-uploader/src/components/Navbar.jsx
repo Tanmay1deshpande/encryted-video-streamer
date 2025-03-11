@@ -11,6 +11,7 @@ import axios from "axios";
 
 const Navbar = ({ title, navigationBtn }) => {
   const navigate = useNavigate();
+  const isTesting = false;
 
   const goWhere = () => {
     console.log("Btn click", navigationBtn);
@@ -41,12 +42,16 @@ const Navbar = ({ title, navigationBtn }) => {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               {title}
             </Typography>
-            <Button color="inherit" variant="outlined" onClick={testingDb}>
-              Testing
-            </Button>
-            <Button color="inherit" variant="outlined" onClick={testingCreateDb}>
-              CreateDB
-            </Button>
+            {isTesting && (
+              <div>
+                <Button color="inherit" variant="outlined" onClick={testingDb}>
+                  Testing
+                </Button>
+                <Button color="inherit" variant="outlined" onClick={testingCreateDb}>
+                  CreateDB
+                </Button>
+              </div>
+            )}
 
             {navigationBtn == "Uploader" && (
               <Button color="inherit" variant="outlined" onClick={goWhere}>

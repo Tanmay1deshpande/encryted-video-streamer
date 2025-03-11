@@ -23,8 +23,8 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # MySQL Connection
-# conn = pymysql.connect(host="localhost", user="root", password="Dtanmay17@", database="video_db")
-# cursor = conn.cursor()
+conn = pymysql.connect(host="localhost", user="root", password="Dtanmay17@", database="video_db")
+cursor = conn.cursor()
 
 #MySQL Aiven Hosted DB server connection: 
 # timeout = 10
@@ -42,9 +42,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ) 
 
 # Render PostgresSQL database connection 
-DATABASE_URL = "postgresql://adminy:cWppaEkh9rUbpBT508BW9Til7dGlkcZS@dpg-cv7ia2qn91rc73e4h8rg-a.singapore-postgres.render.com/defaultdb_1ycj"
-conn = psycopg2.connect(DATABASE_URL)
-cursor = conn.cursor()
+# DATABASE_URL = "postgresql://adminy:cWppaEkh9rUbpBT508BW9Til7dGlkcZS@dpg-cv7ia2qn91rc73e4h8rg-a.singapore-postgres.render.com/defaultdb_1ycj"
+# conn = psycopg2.connect(DATABASE_URL)
+# cursor = conn.cursor()
 
 KEY = get_random_bytes(32)  # AES-256 requires a 32-byte key
 BLOCK_SIZE = AES.block_size  # AES block size (16 bytes)
@@ -53,7 +53,7 @@ AES_KEY = "kafka_did_not_work_key"
 cipher = AESCipher(AES_KEY)
 
 
-
+#Upload a video
 @app.route("/upload", methods=["POST"])
 @cross_origin(origin='*')
 def upload_video():
@@ -62,7 +62,7 @@ def upload_video():
         video_name = request.form['video_name']  
         video_data = video.read()  
 
-        query = "INSERT INTO videos (video_name, video_data) VALUES ($1, $2)"
+        query = "INSERT INTO videos (video_name, video_data) VALUES (%s, %s)"
         cursor.execute(query, (video_name, psycopg2.Binary(video_data)))
         conn.commit()
 
@@ -72,14 +72,15 @@ def upload_video():
         return jsonify({"error": str(e)}), 500
    
 
+#Return a single video for playing
 @app.route("/video/:id=<int:video_id>", methods=["GET"])
 @cross_origin(origin='*')
 def get_video(video_id):
     print("Video ID: ", video_id)
     try:
-        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = $1", (video_id))
+        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = %s", (video_id))
         result = cursor.fetchone()
-        # print("Result: ", result)
+        print("Result: ", result[1])
         oneVideo = {
                 "video_data": base64.b64encode(result[0]).decode("utf-8"),
                 "video_name": result[1]
@@ -92,6 +93,22 @@ def get_video(video_id):
         return jsonify({"error": str(e)}), 500
 
 
+#Delete Video by ID
+@app.route("/delete/:id=<int:video_id>", methods=["DELETE"])
+@cross_origin(origin='*')
+def delete_video(video_id):
+    print("Video ID: ", video_id)
+    try:
+        cursor.execute("DELETE FROM videos where id = %s",(video_id))
+        conn.commit()
+
+        return jsonify({"data":"Delete success"})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Get all the videos 
 @app.route("/videos", methods=["GET"])
 @cross_origin(origin='*')
 def get_videos():
@@ -146,7 +163,7 @@ def test():
             }
             for row in rows
         ]
-        print("RESULT: ",rows,"BOIII")
+        print("RESULT: ",rows,"post-query")
 
         return jsonify(result)
     
@@ -154,15 +171,20 @@ def test():
         return jsonify({"error": str(e)}), 600
     
 
-@app.route("/createDb", methods=["GET"])
+@app.route("/test2", methods=["GET"])
 @cross_origin(origins='*')
 def create_db():
     try:
-        cursor.execute("CREATE TABLE videos (id SERIAL PRIMARY KEY, video_name VARCHAR(255) NOT NULL, video_data BYTEA NOT NULL, upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP )")
-        cursor.execute("CREATE TABLE mytest (id INTEGER PRIMARY KEY)")
-        cursor.execute("INSERT INTO mytest (id) VALUES (1), (2)")
-        cursor.execute("SELECT * FROM mytest")
-        print(cursor.fetchall())
+        # cursor.execute("CREATE TABLE videos (id SERIAL PRIMARY KEY, video_name VARCHAR(255) NOT NULL, video_data BYTEA NOT NULL, upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP )")
+        # cursor.execute("CREATE TABLE mytest (id INTEGER PRIMARY KEY)")
+        # cursor.execute("INSERT INTO mytest (id) VALUES (1), (2)")
+        # cursor.execute("SELECT * FROM mytest")
+        # cursor.execute("ROLLBACK")
+        cursor.execute("ROLLBACK")
+        # db_version = cursor.fetchone()
+        # print("PostgreSQL version:", db_version[0])
+
+        return jsonify({"message": "ROLLBACK!"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 600

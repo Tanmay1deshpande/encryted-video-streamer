@@ -1,8 +1,9 @@
-import { DECREMENT, ERROR, INCREMENT } from "./actions";
+import { DECREMENT, ERROR, INCREMENT, LOADER } from "./actions";
 
 const initialState = {
   value: 0,
   err: false,
+  loader: false,
 };
 
 export default (state = initialState, { type, payload }) => {
@@ -15,6 +16,9 @@ export default (state = initialState, { type, payload }) => {
 
     case ERROR:
       return { ...state, ...payload };
+
+    case LOADER:
+      return { ...state, loader: payload };
 
     default:
       return state;

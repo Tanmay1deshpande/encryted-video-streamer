@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Button, LinearProgress } from "@mui/material";
 import "./css/components.css";
+import { useDispatch, useSelector } from "react-redux";
+import { LOADER } from "../store/actions";
 
 const FileUploader = ({ setTime, setFName, triggerReload }) => {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState("");
-  const [loader, setLoader] = useState(false);
+  const dispatch = useDispatch();
   const chunkSize = 16 * 1024;
 
   const encryptFile = async (file) => {
@@ -23,7 +25,6 @@ const FileUploader = ({ setTime, setFName, triggerReload }) => {
     // Generate random IV for encryption
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
-    // Read the file as ArrayBuffer
     const fileBuffer = await file.arrayBuffer();
 
     // Split the file into chunks and encrypt them
@@ -34,7 +35,6 @@ const FileUploader = ({ setTime, setFName, triggerReload }) => {
       chunks.push(encryptedChunk);
     }
 
-    // Optionally, send these chunks via Kafka to the backend
     sendChunksToKafka(chunks, iv);
 
     setStatus("File encrypted and ready for transmission!");
@@ -47,17 +47,12 @@ const FileUploader = ({ setTime, setFName, triggerReload }) => {
   };
 
   const sendChunksToKafka = async (chunks, iv) => {
-    // For each encrypted chunk, send it to the backend via Kafka.
-    // Here, you would use your Kafka producer to send each chunk.
-    // This could be an HTTP request or direct Kafka producer logic.
     console.log("Total number of chunks: ", chunks.length);
     for (const chunk of chunks) {
       const chunkBase64 = arrayBufferToBase64(chunk);
       const ivBase64 = arrayBufferToBase64(iv);
 
-      // Send this data via your Kafka producer or HTTP request
       // console.log("Sending chunk to Kafka");
-      // Your Kafka logic to send the data
     }
   };
 
@@ -77,16 +72,18 @@ const FileUploader = ({ setTime, setFName, triggerReload }) => {
     const currentTimestamp = Date.now();
     setTime(currentTimestamp);
     if (file) {
-      setFName(file.name); // Set the file name
+      setFName(file.name);
     }
 
     const formData = new FormData();
     formData.append("video", file);
     formData.append("video_name", file.name);
 
-    // Send video to backend Flask API
     try {
-      setLoader(true);
+      dispatch({
+        type: LOADER,
+        payload: true,
+      });
       const response = await axios.post("http://127.0.0.1:5000/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -97,20 +94,25 @@ const FileUploader = ({ setTime, setFName, triggerReload }) => {
       if (response.data.message === "Upload successful") {
         console.log("Uploaded successfully");
         alert("Video uploaded successfully");
-        setLoader(false);
+        dispatch({
+          type: LOADER,
+          payload: false,
+        });
         triggerReload(true);
       }
     } catch (error) {
       console.error("Error uploading video:", error);
       alert("Upload failed");
-      setLoader(false);
+      dispatch({
+        type: LOADER,
+        payload: false,
+      });
     }
   };
 
   return (
     <div>
       <div style={{ margin: "20px" }}>
-        {loader && <LinearProgress />}
         <input type="file" onChange={handleFileChange} />
         <Button variant="contained" size="large" onClick={handleFileUpload}>
           Upload Video
