@@ -12,6 +12,7 @@ import database
 import base64
 from datetime import datetime
 import psycopg2
+import time
 
 
 # App setup
@@ -65,6 +66,8 @@ def upload_video():
         query = "INSERT INTO videos (video_name, video_data) VALUES (%s, %s)"
         cursor.execute(query, (video_name, psycopg2.Binary(video_data)))
         conn.commit()
+        # cursor.close()
+        # conn.close()
 
         return jsonify({"message": "Upload successful"}), 201
 
@@ -78,13 +81,15 @@ def upload_video():
 def get_video(video_id):
     print("Video ID: ", video_id)
     try:
-        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = %s", (video_id))
+        cursor.execute("SELECT video_data, video_name FROM videos WHERE id = %s", (video_id,))
         result = cursor.fetchone()
         print("Result: ", result[1])
         oneVideo = {
                 "video_data": base64.b64encode(result[0]).decode("utf-8"),
                 "video_name": result[1]
             }
+        # cursor.close()
+        # conn.close()
         
 
         return jsonify(oneVideo), 200
@@ -99,8 +104,10 @@ def get_video(video_id):
 def delete_video(video_id):
     print("Video ID: ", video_id)
     try:
-        cursor.execute("DELETE FROM videos where id = %s",(video_id))
+        cursor.execute("DELETE FROM videos where id = %s",(video_id,))
         conn.commit()
+        # cursor.close()
+        # conn.close()
 
         return jsonify({"data":"Delete success"})
     
@@ -115,6 +122,8 @@ def get_videos():
     try:
         cursor.execute("SELECT id, video_name, upload_time FROM videos")
         rows = cursor.fetchall()
+        oneRow = rows[0]
+        print("ROWWW: ", oneRow[0], oneRow[1])
         videos = []
 
         for row in rows:
@@ -139,6 +148,8 @@ def get_videos():
                 "video_name": video_name,
                 "upload_time": formatted_time
             })
+        # cursor.close()
+        # conn.close()
 
         return jsonify(videos)
 
